@@ -5,7 +5,7 @@ import {
   createReadTool,
 } from "@mariozechner/pi-coding-agent";
 import { Type } from "@sinclair/typebox";
-import { Markit } from "markit-ai";
+import { Markit, createLlmFunctions } from "markit-ai";
 
 const MARKIT_EXTENSIONS = new Set([
   ".pdf",
@@ -46,41 +46,26 @@ const readSchema = Type.Object({
   ),
 });
 
-function buildTranscribe(
-  getApiKey: () => Promise<string | undefined>,
-): (audio: Buffer, mimetype: string) => Promise<string> {
-  return async (audio: Buffer, mimetype: string): Promise<string> => {
-    const key = await getApiKey();
+/**
+ * Resolve an OpenAI API key from pi's auth system or environment.
+ * Sets it as OPENAI_API_KEY env var so markit's provider system picks it up.
+ */
+async function resolveOpenAIKey(ctx: any): Promise<void> {
+  // Already set in env — nothing to do
+  if (process.env.OPENAI_API_KEY) return;
 
-    if (!key) throw new Error("No OpenAI API key available for transcription");
-
-    const extMap: Record<string, string> = {
-      "audio/mpeg": "mp3", "audio/wav": "wav", "audio/mp4": "m4a",
-      "audio/ogg": "ogg", "audio/flac": "flac", "audio/aac": "aac",
-      "audio/x-ms-wma": "wma",
-    };
-    const ext = extMap[mimetype] || "mp3";
-    const file = new File([new Uint8Array(audio)], `audio.${ext}`, { type: mimetype });
-    const form = new FormData();
-    form.append("file", file);
-    form.append("model", "gpt-4o-mini-transcribe");
-
-    const res = await fetch("https://api.openai.com/v1/audio/transcriptions", {
-      method: "POST",
-      headers: { Authorization: `Bearer ${key}` },
-      body: form,
-    });
-
-    if (!res.ok) {
-      const body = await res.text().catch(() => "");
-      throw new Error(
-        `Transcription failed: ${res.status} ${res.statusText} ${body}`,
-      );
+  // Try pi auth storage
+  for (const id of ["openai", "openai-codex"]) {
+    try {
+      const key = await ctx.modelRegistry.authStorage.getApiKey(id);
+      if (key) {
+        process.env.OPENAI_API_KEY = key;
+        return;
+      }
+    } catch {
+      // skip
     }
-
-    const data = (await res.json()) as { text: string };
-    return data.text;
-  };
+  }
 }
 
 export default function (pi: ExtensionAPI) {
@@ -90,23 +75,12 @@ export default function (pi: ExtensionAPI) {
   pi.on("session_start", async (_event, ctx) => {
     builtinRead = createReadTool(ctx.cwd);
 
-    const getApiKey = async () => {
-      // 1. Explicit env var (standard OpenAI API key — best for transcription)
-      if (process.env.OPENAI_API_KEY) return process.env.OPENAI_API_KEY;
-      // 2. pi auth storage (API key or OAuth)
-      for (const id of ["openai", "openai-codex"]) {
-        try {
-          const key = await ctx.modelRegistry.authStorage.getApiKey(id);
-          if (key) return key;
-        } catch {
-          // skip
-        }
-      }
-      return undefined;
-    };
-    const transcribe = buildTranscribe(getApiKey);
+    // Resolve API key from pi auth into env so markit's provider system finds it
+    await resolveOpenAIKey(ctx);
 
-    markit = new Markit({ transcribe });
+    // Use markit's own provider system for transcription/description
+    const llmFunctions = createLlmFunctions({});
+    markit = new Markit(llmFunctions);
 
     if (ctx.hasUI) {
       ctx.ui.setStatus(
