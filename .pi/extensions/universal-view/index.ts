@@ -46,16 +46,12 @@ const readSchema = Type.Object({
   ),
 });
 
-async function buildTranscribe(
+function buildTranscribe(
   getApiKey: () => Promise<string | undefined>,
-): Promise<((audio: Buffer, mimetype: string) => Promise<string>) | undefined> {
-  const apiKey = await getApiKey();
-  if (!apiKey) return undefined;
-
+): (audio: Buffer, mimetype: string) => Promise<string> {
   return async (audio: Buffer, mimetype: string): Promise<string> => {
-    // Re-resolve key each call in case OAuth token refreshed
     const key = await getApiKey();
-    if (!key) throw new Error("OpenAI API key no longer available");
+    if (!key) throw new Error("No OpenAI API key available for transcription");
 
     const ext = mimetype.split("/")[1] || "mp3";
     const form = new FormData();
@@ -69,7 +65,10 @@ async function buildTranscribe(
     });
 
     if (!res.ok) {
-      throw new Error(`Transcription failed: ${res.status} ${res.statusText}`);
+      const body = await res.text().catch(() => "");
+      throw new Error(
+        `Transcription failed: ${res.status} ${res.statusText} ${body}`,
+      );
     }
 
     const data = (await res.json()) as { text: string };
@@ -92,9 +91,9 @@ export default function (pi: ExtensionAPI) {
       }
       return undefined;
     };
-    const transcribe = await buildTranscribe(getApiKey);
+    const transcribe = buildTranscribe(getApiKey);
 
-    markit = new Markit(transcribe ? { transcribe } : {});
+    markit = new Markit({ transcribe });
 
     if (ctx.hasUI) {
       ctx.ui.setStatus(
