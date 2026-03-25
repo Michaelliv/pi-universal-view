@@ -46,12 +46,50 @@ const readSchema = Type.Object({
   ),
 });
 
+async function buildTranscribe(
+  getApiKey: () => Promise<string | undefined>,
+): Promise<((audio: Buffer, mimetype: string) => Promise<string>) | undefined> {
+  const apiKey = await getApiKey();
+  if (!apiKey) return undefined;
+
+  return async (audio: Buffer, mimetype: string): Promise<string> => {
+    // Re-resolve key each call in case OAuth token refreshed
+    const key = await getApiKey();
+    if (!key) throw new Error("OpenAI API key no longer available");
+
+    const ext = mimetype.split("/")[1] || "mp3";
+    const form = new FormData();
+    form.append("file", new Blob([audio], { type: mimetype }), `audio.${ext}`);
+    form.append("model", "gpt-4o-mini-transcribe");
+
+    const res = await fetch("https://api.openai.com/v1/audio/transcriptions", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${key}` },
+      body: form,
+    });
+
+    if (!res.ok) {
+      throw new Error(`Transcription failed: ${res.status} ${res.statusText}`);
+    }
+
+    const data = (await res.json()) as { text: string };
+    return data.text;
+  };
+}
+
 export default function (pi: ExtensionAPI) {
-  const markit = new Markit();
+  let markit: Markit;
   let builtinRead: ReturnType<typeof createReadTool>;
 
   pi.on("session_start", async (_event, ctx) => {
     builtinRead = createReadTool(ctx.cwd);
+
+    const getApiKey = () =>
+      ctx.modelRegistry.authStorage.getApiKey("openai");
+    const transcribe = await buildTranscribe(getApiKey);
+
+    markit = new Markit(transcribe ? { transcribe } : {});
+
     if (ctx.hasUI) {
       ctx.ui.setStatus(
         "universal-view",
