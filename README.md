@@ -44,16 +44,30 @@ Just use `read` as normal. The extension handles routing automatically:
 
 No new tools to learn. No special syntax. The LLM's existing `read` tool gains superpowers.
 
-## Audio transcription
+## AI features (audio transcription & image description)
 
-Audio files are transcribed using OpenAI's `gpt-4o-mini-transcribe` model. Set your API key via:
+The extension uses [markit's provider system](https://github.com/Michaelliv/markit) for AI-powered features — audio transcription via `gpt-4o-mini-transcribe` and image description via `gpt-4.1-nano`.
+
+### Setup
+
+Set your OpenAI API key via any of these (checked in order):
 
 1. **Environment variable** — `export OPENAI_API_KEY=sk-...` (recommended)
-2. **pi auth storage** — API key stored via pi settings
+2. **pi auth storage** — the extension bridges keys from pi's auth system into the environment automatically
 
-> **Note:** OAuth tokens from `pi login openai` don't currently have sufficient scopes for transcription. Use a standard API key instead.
+No key? No problem — audio files still return metadata (duration, format, bitrate) and images pass through to pi's native vision. Transcription and description are additive.
 
-If no OpenAI key is available, audio files still convert — you'll get metadata (duration, format) but no transcript.
+### Supported providers
+
+Markit supports both OpenAI and Anthropic as providers. By default it uses OpenAI. To configure a different provider or model, use markit's config system:
+
+```bash
+markit init                          # create .markit/ config
+markit config set llm.provider anthropic
+markit config set llm.apiKey sk-...
+```
+
+See [markit docs](https://github.com/Michaelliv/markit) for full provider configuration.
 
 ## Project structure
 
@@ -68,11 +82,10 @@ pi-universal-view/
 
 The extension registers a `read` tool that shadows pi's built-in:
 
-1. **Check the file extension** — is it in the markit set?
-2. **Yes** → call `markit.convertFile()`, return markdown
-3. **No** → delegate to `createReadTool()`, the original built-in reader
+1. **On session start** — resolve OpenAI key from pi's auth into the environment, then call `createLlmFunctions()` from markit to set up transcription and image description
+2. **On each read** — check the file extension. Binary format? Route to `markit.convertFile()`. Everything else? Delegate to pi's built-in reader
 
-That's it. ~80 lines of code. The heavy lifting is in [markit](https://github.com/Michaelliv/markit).
+~70 lines of code. The heavy lifting is in [markit](https://github.com/Michaelliv/markit).
 
 ## Credits
 
