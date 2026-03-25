@@ -46,11 +46,12 @@ No new tools to learn. No special syntax. The LLM's existing `read` tool gains s
 
 ## Audio transcription
 
-Audio files are transcribed using OpenAI's `gpt-4o-mini-transcribe` model. The extension resolves the API key automatically via pi's auth system:
+Audio files are transcribed using OpenAI's `gpt-4o-mini-transcribe` model. Set your API key via:
 
-1. **OAuth** — if you're logged in via `pi login openai`, it just works
-2. **API key in auth.json** — set via `pi` settings
-3. **Environment variable** — `OPENAI_API_KEY`
+1. **Environment variable** — `export OPENAI_API_KEY=sk-...` (recommended)
+2. **pi auth storage** — API key stored via pi settings
+
+> **Note:** OAuth tokens from `pi login openai` don't currently have sufficient scopes for transcription. Use a standard API key instead.
 
 If no OpenAI key is available, audio files still convert — you'll get metadata (duration, format) but no transcript.
 

@@ -51,11 +51,18 @@ function buildTranscribe(
 ): (audio: Buffer, mimetype: string) => Promise<string> {
   return async (audio: Buffer, mimetype: string): Promise<string> => {
     const key = await getApiKey();
+
     if (!key) throw new Error("No OpenAI API key available for transcription");
 
-    const ext = mimetype.split("/")[1] || "mp3";
+    const extMap: Record<string, string> = {
+      "audio/mpeg": "mp3", "audio/wav": "wav", "audio/mp4": "m4a",
+      "audio/ogg": "ogg", "audio/flac": "flac", "audio/aac": "aac",
+      "audio/x-ms-wma": "wma",
+    };
+    const ext = extMap[mimetype] || "mp3";
+    const file = new File([new Uint8Array(audio)], `audio.${ext}`, { type: mimetype });
     const form = new FormData();
-    form.append("file", new Blob([audio], { type: mimetype }), `audio.${ext}`);
+    form.append("file", file);
     form.append("model", "gpt-4o-mini-transcribe");
 
     const res = await fetch("https://api.openai.com/v1/audio/transcriptions", {
@@ -84,10 +91,16 @@ export default function (pi: ExtensionAPI) {
     builtinRead = createReadTool(ctx.cwd);
 
     const getApiKey = async () => {
-      // Try common OpenAI provider IDs — pi uses different IDs for different OAuth flows
+      // 1. Explicit env var (standard OpenAI API key — best for transcription)
+      if (process.env.OPENAI_API_KEY) return process.env.OPENAI_API_KEY;
+      // 2. pi auth storage (API key or OAuth)
       for (const id of ["openai", "openai-codex"]) {
-        const key = await ctx.modelRegistry.authStorage.getApiKey(id);
-        if (key) return key;
+        try {
+          const key = await ctx.modelRegistry.authStorage.getApiKey(id);
+          if (key) return key;
+        } catch {
+          // skip
+        }
       }
       return undefined;
     };
