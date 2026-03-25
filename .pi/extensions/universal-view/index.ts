@@ -51,7 +51,7 @@ const readSchema = Type.Object({
  * Sets it as OPENAI_API_KEY env var so markit's provider system picks it up.
  */
 async function resolveOpenAIKey(ctx: any): Promise<void> {
-  // Already set in env — nothing to do
+  // Already set in env
   if (process.env.OPENAI_API_KEY) return;
 
   // Try pi auth storage
