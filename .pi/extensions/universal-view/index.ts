@@ -15,14 +15,6 @@ const MARKIT_EXTENSIONS = new Set([
   ".epub",
   ".ipynb",
   ".csv",
-  ".png",
-  ".jpg",
-  ".jpeg",
-  ".gif",
-  ".webp",
-  ".bmp",
-  ".tiff",
-  ".tif",
   ".mp3",
   ".wav",
   ".ogg",
@@ -72,7 +64,7 @@ export default function (pi: ExtensionAPI) {
     name: "read",
     label: "Read",
     description:
-      "Read the contents of a file. Supports text files and images (jpg, png, gif, webp). Also converts binary formats (PDF, DOCX, PPTX, XLSX, EPUB, Jupyter, CSV, audio, ZIP) to markdown. For text files, output is truncated to 2000 lines or 50KB. Use offset/limit for large files.",
+      "Read the contents of a file. Supports text files and images (jpg, png, gif, webp). Also converts binary formats (PDF, DOCX, PPTX, XLSX, EPUB, Jupyter, CSV, audio, ZIP, RSS/Atom feeds) to markdown. For text files, output is truncated to 2000 lines or 50KB. Use offset/limit for large files.",
     parameters: readSchema,
 
     async execute(toolCallId, params, signal, onUpdate, ctx) {
