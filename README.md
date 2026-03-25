@@ -2,7 +2,7 @@
 
 Universal file reading for [pi](https://github.com/badlogic/pi-mono). Powered by [markit](https://github.com/Michaelliv/markit).
 
-Drop any file into a conversation — PDF, DOCX, XLSX, EPUB, PowerPoint, Jupyter notebook, audio, ZIP — and pi reads it as markdown. No setup, no config. It just works.
+Drop any file into a conversation - PDF, DOCX, XLSX, EPUB, PowerPoint, Jupyter notebook, audio, ZIP - and pi reads it as markdown. No setup, no config. It just works.
 
 ## Install
 
@@ -20,7 +20,7 @@ read("data.xlsx")    → markit converts to markdown tables → LLM sees rows
 read("index.ts")     → passes through to built-in read → unchanged
 ```
 
-One tool, zero friction. The LLM doesn't know or care that the file was binary — it just sees markdown.
+One tool, zero friction. The LLM doesn't know or care that the file was binary - it just sees markdown.
 
 ## Supported formats
 
@@ -32,7 +32,7 @@ One tool, zero friction. The LLM doesn't know or care that the file was binary �
 | Archives | `.zip` |
 | Feeds | `.rss` `.atom` |
 
-Everything else falls through to pi's default `read` — plain text, source code, config files, etc.
+Everything else falls through to pi's default `read` - plain text, source code, config files, etc.
 
 ## Usage
 
@@ -46,16 +46,16 @@ No new tools to learn. No special syntax. The LLM's existing `read` tool gains s
 
 ## AI features (audio transcription & image description)
 
-The extension uses [markit's provider system](https://github.com/Michaelliv/markit) for AI-powered features — audio transcription via `gpt-4o-mini-transcribe` and image description via `gpt-4.1-nano`.
+The extension uses [markit's provider system](https://github.com/Michaelliv/markit) for AI-powered features - audio transcription via `gpt-4o-mini-transcribe` and image description via `gpt-4.1-nano`.
 
 ### Setup
 
 Set your OpenAI API key via any of these (checked in order):
 
-1. **Environment variable** — `export OPENAI_API_KEY=sk-...` (recommended)
-2. **pi auth storage** — the extension bridges keys from pi's auth system into the environment automatically
+1. **Environment variable** - `export OPENAI_API_KEY=sk-...` (recommended)
+2. **pi auth storage** - the extension bridges keys from pi's auth system into the environment automatically
 
-No key? No problem — audio files still return metadata (duration, format, bitrate) and images pass through to pi's native vision. Transcription and description are additive.
+No key? No problem - audio files still return metadata (duration, format, bitrate) and images pass through to pi's native vision. Transcription and description are additive.
 
 ### Supported providers
 
@@ -69,28 +69,19 @@ markit config set llm.apiKey sk-...
 
 See [markit docs](https://github.com/Michaelliv/markit) for full provider configuration.
 
-## Project structure
-
-```
-pi-universal-view/
-├── .pi/extensions/universal-view/
-│   └── index.ts          # Extension: intercepts read, routes to markit
-└── package.json          # pi-package manifest
-```
-
 ## How it's built
 
 The extension registers a `read` tool that shadows pi's built-in:
 
-1. **On session start** — resolve OpenAI key from pi's auth into the environment, then call `createLlmFunctions()` from markit to set up transcription and image description
-2. **On each read** — check the file extension. Binary format? Route to `markit.convertFile()`. Everything else? Delegate to pi's built-in reader
+1. **On session start** - resolve OpenAI key from pi's auth into the environment, then call `createLlmFunctions()` from markit to set up transcription and image description
+2. **On each read** - check the file extension. Binary format? Route to `markit.convertFile()`. Everything else? Delegate to pi's built-in reader
 
 ~70 lines of code. The heavy lifting is in [markit](https://github.com/Michaelliv/markit).
 
 ## Credits
 
-- [pi](https://github.com/badlogic/pi-mono) — the extensible coding agent
-- [markit](https://github.com/Michaelliv/markit) — the universal file-to-markdown converter
+- [pi](https://github.com/badlogic/pi-mono) - the extensible coding agent
+- [markit](https://github.com/Michaelliv/markit) - the universal file-to-markdown converter
 
 ## License
 
