@@ -84,8 +84,14 @@ export default function (pi: ExtensionAPI) {
   pi.on("session_start", async (_event, ctx) => {
     builtinRead = createReadTool(ctx.cwd);
 
-    const getApiKey = () =>
-      ctx.modelRegistry.authStorage.getApiKey("openai");
+    const getApiKey = async () => {
+      // Try common OpenAI provider IDs — pi uses different IDs for different OAuth flows
+      for (const id of ["openai", "openai-codex"]) {
+        const key = await ctx.modelRegistry.authStorage.getApiKey(id);
+        if (key) return key;
+      }
+      return undefined;
+    };
     const transcribe = await buildTranscribe(getApiKey);
 
     markit = new Markit(transcribe ? { transcribe } : {});
