@@ -12,12 +12,15 @@ pi install npm:pi-universal-view
 
 ## How it works
 
-The extension replaces pi's built-in `read` tool. Binary formats get converted to markdown via [markit-ai](https://www.npmjs.com/package/markit-ai). Everything else passes through to the default reader.
+The extension replaces pi's built-in `read` tool. Binary formats and URLs get converted to markdown via [markit-ai](https://www.npmjs.com/package/markit-ai). Everything else passes through to the default reader.
 
 ```
-read("paper.pdf")    → markit converts to markdown → LLM sees full text
-read("data.xlsx")    → markit converts to markdown tables → LLM sees rows
-read("index.ts")     → passes through to built-in read → unchanged
+read("paper.pdf")                        → markit converts to markdown → LLM sees full text
+read("data.xlsx")                        → markit converts to markdown tables → LLM sees rows
+read("https://github.com/owner/repo")    → markit fetches README → LLM sees markdown
+read("https://github.com/o/r/issues/1")  → markit fetches via API → LLM sees issue body
+read("https://example.com")              → markit fetches page → LLM sees markdown
+read("index.ts")                         → passes through to built-in read → unchanged
 ```
 
 ## Supported formats
@@ -29,6 +32,7 @@ read("index.ts")     → passes through to built-in read → unchanged
 | Audio | `.mp3` `.wav` `.ogg` `.flac` `.m4a` `.aac` `.wma` |
 | Archives | `.zip` |
 | Feeds | `.rss` `.atom` |
+| URLs | `https://github.com/*` `https://gist.github.com/*` any web page |
 
 Text files, source code, images, and config files fall through to pi's default `read`.
 

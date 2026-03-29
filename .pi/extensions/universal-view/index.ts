@@ -32,6 +32,10 @@ function isMarkitFile(path: string): boolean {
   return MARKIT_EXTENSIONS.has(ext);
 }
 
+function isUrl(path: string): boolean {
+  return path.startsWith("http://") || path.startsWith("https://");
+}
+
 const readSchema = Type.Object({
   path: Type.String({
     description: "Path to the file to read (relative or absolute)",
@@ -94,12 +98,22 @@ export default function (pi: ExtensionAPI) {
     name: "read",
     label: "Read",
     description:
-      "Read the contents of a file. Supports text files and images (jpg, png, gif, webp). Also converts binary formats (PDF, DOCX, PPTX, XLSX, EPUB, Jupyter, CSV, audio, ZIP, RSS/Atom feeds) to markdown. For text files, output is truncated to 2000 lines or 50KB. Use offset/limit for large files.",
+      "Read the contents of a file or URL. Supports text files and images (jpg, png, gif, webp). Also converts binary formats (PDF, DOCX, PPTX, XLSX, EPUB, Jupyter, CSV, audio, ZIP, RSS/Atom feeds) and URLs (GitHub repos, gists, issues, PRs, and any web page) to markdown. For text files, output is truncated to 2000 lines or 50KB. Use offset/limit for large files.",
     parameters: readSchema,
 
     async execute(toolCallId, params, signal, onUpdate, ctx) {
+      // URLs → markit.convertUrl (GitHub, web pages, etc.)
+      if (isUrl(params.path)) {
+        const result = await markit.convertUrl(params.path);
+        return {
+          content: [{ type: "text", text: result.markdown }],
+          details: {},
+        };
+      }
+
       const absolutePath = resolve(ctx.cwd, params.path);
 
+      // Binary formats → markit.convertFile
       if (isMarkitFile(absolutePath)) {
         try {
           accessSync(absolutePath, constants.R_OK);
@@ -114,6 +128,7 @@ export default function (pi: ExtensionAPI) {
         };
       }
 
+      // Everything else → built-in reader
       return builtinRead.execute(toolCallId, params, signal, onUpdate, ctx);
     },
   });
