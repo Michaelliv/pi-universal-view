@@ -66,11 +66,6 @@ The extension registers a `read` tool that shadows pi's built-in:
 
 ~70 lines of code. See [markit](https://github.com/Michaelliv/markit) for the conversion logic.
 
-## Credits
-
-- [pi](https://github.com/badlogic/pi-mono) by [@badlogic](https://github.com/badlogic)
-- [markit](https://github.com/Michaelliv/markit)
-
 ## License
 
 MIT
