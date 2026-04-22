@@ -85,13 +85,6 @@ export default function (pi: ExtensionAPI) {
     // Use markit's own provider system for transcription/description
     const llmFunctions = createLlmFunctions({});
     markit = new Markit(llmFunctions);
-
-    if (ctx.hasUI) {
-      ctx.ui.setStatus(
-        "universal-view",
-        ctx.ui.theme.fg("dim", "universal-view"),
-      );
-    }
   });
 
   pi.registerTool({
